@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Visual Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PDF.js library for client-side parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-2xl mx-auto">
+            
+            <header class="text-center mb-8 relative">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">AI-Powered Visual Search</h1>
+                <p class="text-gray-600 mt-2">Upload an image to find a match in the knowledge base.</p>
+                <button id="settings-button" class="absolute top-0 right-0 p-2 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+            </header>
+
+            <!-- Main App Content -->
+            <div id="main-app">
+                <!-- File Upload Section -->
+                <div id="upload-section" class="mb-8">
+                    <label for="image-upload" class="block text-lg font-medium text-gray-700 mb-2">Upload Subject Image</label>
+                    <div class="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="image-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                    <span>Upload a file</span>
+                                    <input id="image-upload" name="image-upload" type="file" class="sr-only" accept="image/png, image/jpeg">
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Preview Section -->
+                <div id="image-preview-section" class="hidden mb-6 text-center">
+                    <h3 class="text-xl font-semibold mb-4">Subject Image</h3>
+                    <img id="image-preview" src="#" alt="Image preview" class="max-w-xs mx-auto rounded-lg shadow-md"/>
+                    <button id="analyze-button" class="mt-6 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Find Match
+                    </button>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results-section" class="hidden">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4 text-center">Results</h2>
+                    <div id="loader" class="hidden text-center my-8">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                        <p class="mt-4 text-gray-600">Searching knowledge base... This may take a moment.</p>
+                    </div>
+                    <div id="results-content" class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                        <!-- Results will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div id="settings-panel" class="hidden">
+                 <h2 class="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
+                 <div class="space-y-6">
+                     <div>
+                         <label for="pdf-upload" class="block text-sm font-medium text-gray-700">Knowledge Base PDF</label>
+                         <div class="mt-1 flex items-center">
+                            <label for="pdf-upload" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <span>Select PDF</span>
+                                <input id="pdf-upload" name="pdf-upload" type="file" class="sr-only" accept=".pdf">
+                            </label>
+                            <span id="pdf-filename" class="ml-3 text-sm text-gray-500">No file selected</span>
+                         </div>
+                     </div>
+                     <div>
+                         <label for="api-key" class="block text-sm font-medium text-gray-700">OpenAI API Key</label>
+                         <div class="mt-1">
+                             <input type="password" name="api-key" id="api-key" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="Enter your API Key">
+                         </div>
+                     </div>
+                 </div>
+                 <div class="mt-8 flex justify-end space-x-3">
+                     <button id="close-settings-button" type="button" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Close
+                    </button>
+                    <button id="save-settings-button" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Save
+                    </button>
+                 </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        // Set the workerSrc for PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
+        const mainApp = document.getElementById('main-app');
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsButton = document.getElementById('settings-button');
+        const closeSettingsButton = document.getElementById('close-settings-button');
+        const saveSettingsButton = document.getElementById('save-settings-button');
+        
+        const uploadSection = document.getElementById('upload-section');
+        const imageUpload = document.getElementById('image-upload');
+        const imagePreviewSection = document.getElementById('image-preview-section');
+        const imagePreview = document.getElementById('image-preview');
+        const analyzeButton = document.getElementById('analyze-button');
+        const resultsSection = document.getElementById('results-section');
+        const loader = document.getElementById('loader');
+        const resultsContent = document.getElementById('results-content');
+        
+        const pdfUpload = document.getElementById('pdf-upload');
+        const pdfFilename = document.getElementById('pdf-filename');
+        const apiKeyInput = document.getElementById('api-key');
+
+        let settings = {
+            knowledgeBaseFile: null,
+            apiKey: ''
+        };
+
+        // --- Settings Panel Logic ---
+        settingsButton.addEventListener('click', () => {
+            apiKeyInput.value = settings.apiKey;
+            pdfFilename.textContent = settings.knowledgeBaseFile ? settings.knowledgeBaseFile.name : 'No file selected';
+            mainApp.classList.add('hidden');
+            settingsPanel.classList.remove('hidden');
+        });
+        
+        pdfUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                pdfFilename.textContent = file.name;
+            }
+        });
+
+        closeSettingsButton.addEventListener('click', () => {
+            settingsPanel.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+        });
+        
+        saveSettingsButton.addEventListener('click', () => {
+            const file = pdfUpload.files[0];
+            if (file) {
+                settings.knowledgeBaseFile = file;
+            }
+            settings.apiKey = apiKeyInput.value;
+            
+            console.log("Settings Saved:", { knowledgeBaseFileName: settings.knowledgeBaseFile?.name, apiKey: settings.apiKey });
+            alert("Settings saved successfully!");
+
+            settingsPanel.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+        });
+
+
+        // --- Main App Logic ---
+        
+        // Utility to extract text from a PDF file using PDF.js
+        async function getPdfText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+            }
+            return fullText;
+        }
+        
+        // Utility to read a file as a Base64 string
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Handle main image selection
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    uploadSection.classList.add('hidden');
+                    imagePreviewSection.classList.remove('hidden');
+                    resultsSection.classList.add('hidden');
+                    resultsContent.innerHTML = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle analyze button click
+        analyzeButton.addEventListener('click', async () => {
+            imagePreviewSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            loader.classList.remove('hidden');
+            resultsContent.innerHTML = '';
+            const loaderText = loader.querySelector('p');
+
+            const subjectImageFile = imageUpload.files[0];
+            if (!subjectImageFile) {
+                showError("Please select a Subject Image to analyze.");
+                return;
+            }
+
+            if (!settings.knowledgeBaseFile || !settings.apiKey) {
+                showError("Please upload a Knowledge Base PDF and enter an API Key in Settings first.");
+                return;
+            }
+
+            try {
+                // Step 1: Parse the knowledge base PDF
+                loaderText.textContent = 'Parsing knowledge base...';
+                const knowledgeBaseText = await getPdfText(settings.knowledgeBaseFile);
+                
+                // Step 2: Convert the subject image to Base64
+                loaderText.textContent = 'Preparing image...';
+                const subjectImageBase64 = await fileToBase64(subjectImageFile);
+
+                // Step 3: Call the Chat Completions API
+                loaderText.textContent = 'Searching for match...';
+                const openAIEndpoint = 'https://api.openai.com/v1/chat/completions';
+                
+                const payload = {
+                    model: "gpt-4o",
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `You are an AI assistant specializing in information retrieval. Your task is to determine if the user-provided image corresponds to any person or entity described in the "KNOWLEDGE BASE" text. If you find a match, extract the person's name and provide a summary of their bio from the KNOWLEDGE BASE. Format the response as "MATCH FOUND.\\n\\n**Name:** [Name]\\n\\n**Summary of Associated Bio:**\\n[Summary]". If no match is found, respond only with the exact text "PERSON NOT FOUND".\\n\\n--- KNOWLEDGE BASE ---\\n${knowledgeBaseText}`
+                                },
+                                {
+                                    type: "image_url",
+                                    image_url: {
+                                        "url": subjectImageBase64
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens: 500
+                };
+
+                const response = await fetch(openAIEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${settings.apiKey}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`OpenAI API Error: ${errorData.error.message}`);
+                }
+
+                const data = await response.json();
+                const resultText = data.choices[0].message.content;
+
+                loader.classList.add('hidden');
+                if (resultText.includes("PERSON NOT FOUND")) {
+                    showFriendlyMessage(resultText);
+                } else {
+                    showSuccess(resultText);
+                }
+
+            } catch (error) {
+                console.error('Error during analysis:', error);
+                loader.classList.add('hidden');
+                showError(`An error occurred: ${error.message}`);
+            }
+        });
+        
+        function showSuccess(summary) {
+            resultsContent.innerHTML = `
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-xl font-semibold text-gray-900">Match Found!</h3>
+                    <div class="mt-4 text-left text-gray-700 space-y-4 whitespace-pre-wrap">
+                        <p>${summary}</p>
+                    </div>
+                    <button id="try-another-button" class="mt-6 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Analyze Another Image
+                    </button>
+                </div>
+            `;
+            document.getElementById('try-another-button').addEventListener('click', resetApp);
+        }
+
+        function showFriendlyMessage(message) {
+             resultsContent.innerHTML = `
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                    <h3 class="mt-2 text-xl font-semibold text-gray-900">No Match Found</h3>
+                    <p class="mt-2 text-gray-600">The subject image did not correspond to any entry in the knowledge base.</p>
+                    <button id="try-another-button" class="mt-6 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Try Another Image
+                    </button>
+                </div>
+            `;
+            document.getElementById('try-another-button').addEventListener('click', resetApp);
+        }
+
+        function showError(message) {
+            resultsContent.innerHTML = `
+                <div class="text-center text-red-600">
+                    <p>${message}</p>
+                    <button id="try-another-button" class="mt-6 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Try Again
+                    </button>
+                </div>
+            `;
+            document.getElementById('try-another-button').addEventListener('click', resetApp);
+        }
+        
+        function resetApp() {
+            uploadSection.classList.remove('hidden');
+            imagePreviewSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            resultsContent.innerHTML = '';
+            imageUpload.value = '';
+        }
+
+    </script>
+</body>
+</html>
